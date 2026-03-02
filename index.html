@@ -44,23 +44,23 @@
 
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
 
-  html, body {
-    height: 100%;
-    overflow: hidden;
+  html {
     background: #F6F1EB;
-    overscroll-behavior: none;
   }
 
   body {
+    background: #F6F1EB;
     color: var(--text);
     font-family: 'Outfit', sans-serif;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
     align-items: center;
+    overflow: hidden;
     -webkit-user-select: none;
     user-select: none;
-    position: fixed;
-    inset: 0;
+    overscroll-behavior: none;
+    margin: 0;
   }
 
   /* Warm gradient background */
