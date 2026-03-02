@@ -1,0 +1,1361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Piles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,700;9..144,900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F6F1EB;
+    --bg-warm: #EDE6DB;
+    --surface: rgba(255, 255, 255, 0.65);
+    --surface-solid: #FEFCF9;
+    --border: rgba(0, 0, 0, 0.06);
+    --border-strong: rgba(0, 0, 0, 0.1);
+    --text: #2C2520;
+    --text-soft: #8A7E74;
+    --text-muted: #B5AAA0;
+    --accent: #E07A5F;
+    --accent-soft: rgba(224, 122, 95, 0.12);
+    --accent-glow: rgba(224, 122, 95, 0.25);
+    --success: #81B29A;
+    --tube-bg: rgba(255, 255, 255, 0.45);
+    --tube-border: rgba(0, 0, 0, 0.07);
+    --tube-selected: rgba(224, 122, 95, 0.15);
+    --tube-target: rgba(129, 178, 154, 0.12);
+    --shadow-sm: 0 1px 3px rgba(44, 37, 32, 0.04);
+    --shadow-md: 0 4px 16px rgba(44, 37, 32, 0.06);
+    --shadow-lg: 0 12px 40px rgba(44, 37, 32, 0.1);
+    --shadow-ball: 0 2px 8px rgba(0,0,0,0.12);
+    --radius-sm: 12px;
+    --radius-md: 16px;
+    --radius-lg: 24px;
+    --radius-full: 9999px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+    position: relative;
+  }
+
+  /* Warm gradient background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 30% 0%, rgba(224, 122, 95, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 100%, rgba(129, 178, 154, 0.06) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  /* Grain texture */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.3;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.08'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 430px;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* --- Header --- */
+  header {
+    padding: 56px 24px 0;
+    text-align: center;
+  }
+
+  .logo {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: 2rem;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .logo span {
+    color: var(--accent);
+  }
+
+  /* --- Stats bar --- */
+  .stats {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px 24px 0;
+  }
+
+  .stat-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .stat-label {
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+  }
+
+  .stat-value {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--text);
+    min-width: 20px;
+    text-align: center;
+  }
+
+  .stat-pill.accent .stat-value {
+    color: var(--accent);
+  }
+
+  /* --- Level selector --- */
+  .level-bar {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    padding: 16px 24px 0;
+  }
+
+  .level-btn {
+    width: 40px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-soft);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .level-btn:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-solid);
+  }
+
+  .level-btn.active {
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
+    font-weight: 600;
+    box-shadow: var(--shadow-md);
+  }
+
+  .level-btn.locked {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .level-btn.locked:hover {
+    border-color: var(--border);
+    background: var(--surface);
+  }
+
+  /* --- Actions --- */
+  .actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px 24px 0;
+  }
+
+  .action-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-soft);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .action-btn:hover {
+    background: var(--surface-solid);
+    border-color: var(--border-strong);
+    color: var(--text);
+  }
+
+  .action-btn:active {
+    transform: scale(0.96);
+  }
+
+  .action-btn.primary {
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
+  }
+
+  .action-btn.primary:hover {
+    opacity: 0.9;
+  }
+
+  .action-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  .action-btn:disabled:hover {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--text-soft);
+  }
+
+  .action-btn:disabled:active {
+    transform: none;
+  }
+
+  .action-icon {
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  /* --- Game area --- */
+  .game-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px 40px;
+  }
+
+  .tubes-container {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+
+  /* --- Column / Tube --- */
+  .tube-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .tube-col:active {
+    transform: scale(0.98);
+  }
+
+  .tube-label {
+    font-size: 0.6rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    height: 14px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .tube-col.buffer .tube-label {
+    opacity: 1;
+  }
+
+  .tube {
+    position: relative;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 5px;
+    padding: 8px;
+    background: var(--tube-bg);
+    border: 1.5px solid var(--tube-border);
+    border-radius: 8px 8px 20px 20px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: visible;
+  }
+
+  /* Glass shine */
+  .tube::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 3px;
+    right: 60%;
+    bottom: 0;
+    border-radius: 6px 0 0 18px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.25) 0%, transparent 100%);
+    pointer-events: none;
+  }
+
+  /* Bottom rounded edge */
+  .tube::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 4px;
+    right: 4px;
+    height: 4px;
+    background: rgba(0,0,0,0.03);
+    border-radius: 0 0 16px 16px;
+    pointer-events: none;
+  }
+
+  .tube-col.buffer .tube {
+    border-style: dashed;
+    background: rgba(255, 255, 255, 0.25);
+  }
+
+  .tube-col.selected .tube {
+    background: var(--tube-selected);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft), var(--shadow-md);
+    transform: translateY(-4px);
+  }
+
+  .tube-col.valid-target .tube {
+    border-color: var(--success);
+    background: var(--tube-target);
+    box-shadow: 0 0 0 3px rgba(129, 178, 154, 0.1);
+  }
+
+  /* --- Balls --- */
+  .ball {
+    width: var(--ball-size, 44px);
+    height: var(--ball-size, 44px);
+    border-radius: 50%;
+    position: relative;
+    flex-shrink: 0;
+    margin: 0 auto;
+    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: var(--shadow-ball);
+  }
+
+  /* Inner highlight */
+  .ball::before {
+    content: '';
+    position: absolute;
+    top: 15%;
+    left: 20%;
+    width: 35%;
+    height: 30%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0.1) 60%, transparent 100%);
+    transform: rotate(-15deg);
+    pointer-events: none;
+  }
+
+  /* Bottom shadow */
+  .ball::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 15%;
+    right: 15%;
+    height: 30%;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.08);
+    filter: blur(2px);
+    pointer-events: none;
+  }
+
+  /* Muted, earthy, ceramic-inspired palette */
+  .ball.c-0 { background: linear-gradient(145deg, #E88B7A 0%, #D4645A 100%); }
+  .ball.c-1 { background: linear-gradient(145deg, #7AAED4 0%, #5A8EBE 100%); }
+  .ball.c-2 { background: linear-gradient(145deg, #8FC1A6 0%, #6BA584 100%); }
+  .ball.c-3 { background: linear-gradient(145deg, #E8C96A 0%, #D4AE42 100%); }
+  .ball.c-4 { background: linear-gradient(145deg, #B088C4 0%, #9268A8 100%); }
+  .ball.c-5 { background: linear-gradient(145deg, #E8A468 0%, #D48844 100%); }
+  .ball.c-6 { background: linear-gradient(145deg, #6CC4C8 0%, #4AA8AE 100%); }
+
+  .ball.selected-ball {
+    transform: translateY(-14px) scale(1.08);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    z-index: 10;
+    animation: bob 1.2s ease-in-out infinite;
+  }
+
+  @keyframes bob {
+    0%, 100% { transform: translateY(-14px) scale(1.08); }
+    50% { transform: translateY(-20px) scale(1.08); }
+  }
+
+  .ball.dropping {
+    animation: drop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  @keyframes drop {
+    0% { transform: translateY(-30px); opacity: 0.5; }
+    60% { transform: translateY(3px); opacity: 1; }
+    80% { transform: translateY(-2px); }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+
+  /* Empty slot */
+  .ball.empty-slot {
+    background: rgba(0, 0, 0, 0.02);
+    border: 1.5px dashed rgba(0, 0, 0, 0.06);
+    box-shadow: none;
+  }
+
+  .ball.empty-slot::before,
+  .ball.empty-slot::after {
+    display: none;
+  }
+
+  /* --- Victory overlay --- */
+  .victory-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(246, 241, 235, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .victory-overlay.active {
+    display: flex;
+    animation: fadeIn 0.4s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .victory-card {
+    text-align: center;
+    padding: 48px 40px;
+    background: var(--surface-solid);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    animation: cardIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-width: 320px;
+    width: 90%;
+  }
+
+  @keyframes cardIn {
+    0% { transform: scale(0.9) translateY(16px); opacity: 0; }
+    100% { transform: scale(1) translateY(0); opacity: 1; }
+  }
+
+  .victory-emoji {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    animation: celebrate 0.6s ease 0.3s both;
+  }
+
+  @keyframes celebrate {
+    0% { transform: scale(0) rotate(-15deg); }
+    50% { transform: scale(1.2) rotate(5deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+
+  .victory-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: 1.8rem;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  .victory-sub {
+    color: var(--text-soft);
+    font-size: 0.9rem;
+    font-weight: 400;
+    margin-bottom: 28px;
+    line-height: 1.5;
+  }
+
+  .victory-stats {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 28px;
+  }
+
+  .v-stat {
+    text-align: center;
+  }
+
+  .v-stat-value {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 1.6rem;
+    color: var(--accent);
+  }
+
+  .v-stat-label {
+    font-size: 0.65rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .victory-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 32px;
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: var(--radius-full);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+
+  .victory-btn:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+  }
+
+  .victory-btn:active {
+    transform: scale(0.97);
+  }
+
+  .victory-btn.replay {
+    background: transparent;
+    color: var(--text-soft);
+    border: 1px solid var(--border);
+    font-weight: 500;
+    font-size: 0.8rem;
+    padding: 10px 24px;
+    margin-top: 10px;
+  }
+
+  .victory-btn.replay:hover {
+    border-color: var(--border-strong);
+    color: var(--text);
+    opacity: 1;
+  }
+
+  .victory-btn.hidden {
+    display: none;
+  }
+
+  .victory-close {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+    transition: color 0.2s;
+  }
+
+  .victory-close:hover {
+    color: var(--text);
+  }
+
+  /* Confetti */
+  .confetti-container {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 101;
+    overflow: hidden;
+  }
+
+  .confetti {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    animation: confettiFall linear forwards;
+  }
+
+  @keyframes confettiFall {
+    0% { transform: translateY(-10px) rotate(0deg) scale(1); opacity: 1; }
+    80% { opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg) scale(0.3); opacity: 0; }
+  }
+
+  /* Responsive sizing */
+  .tubes-container[data-n="2"],
+  .tubes-container[data-n="3"] {
+    gap: 14px;
+    --ball-size: 50px;
+    --tube-w: 66px;
+  }
+
+  .tubes-container[data-n="4"] {
+    gap: 12px;
+    --ball-size: 46px;
+    --tube-w: 62px;
+  }
+
+  .tubes-container[data-n="5"] {
+    gap: 10px;
+    --ball-size: 42px;
+    --tube-w: 58px;
+  }
+
+  .tubes-container[data-n="6"] {
+    gap: 8px;
+    --ball-size: 36px;
+    --tube-w: 52px;
+  }
+
+  .tubes-container[data-n="7"] {
+    gap: 6px;
+    --ball-size: 30px;
+    --tube-w: 46px;
+  }
+
+  .tube {
+    width: var(--tube-w, 62px);
+  }
+
+  .ball {
+    width: var(--ball-size, 46px);
+    height: var(--ball-size, 46px);
+  }
+
+  /* No entrance animation - DOM rebuilds on each click */
+
+  .game-area.locked-view {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  .lock-msg {
+    text-align: center;
+    padding: 16px 24px 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    letter-spacing: 0.03em;
+  }
+
+  .lock-msg.hidden {
+    display: none;
+  }
+
+  /* --- Math tab --- */
+  .math-toggle {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface-solid);
+    color: var(--text-soft);
+    font-family: 'Fraunces', serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: var(--shadow-md);
+    transition: all 0.25s ease;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .math-toggle:hover {
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
+  }
+
+  .math-panel {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: none;
+    flex-direction: column;
+    background: var(--bg);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .math-panel.active {
+    display: flex;
+  }
+
+  .math-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 56px 24px 16px;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 2;
+  }
+
+  .math-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 900;
+    font-size: 1.4rem;
+    color: var(--text);
+  }
+
+  .math-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-soft);
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .math-close:hover {
+    background: var(--text);
+    color: var(--bg);
+  }
+
+  .math-content {
+    padding: 0 24px 60px;
+    max-width: 430px;
+    margin: 0 auto;
+  }
+
+  .math-content h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text);
+    margin: 28px 0 10px;
+  }
+
+  .math-content h2:first-child {
+    margin-top: 0;
+  }
+
+  .math-content p {
+    font-size: 0.88rem;
+    line-height: 1.65;
+    color: var(--text-soft);
+    margin-bottom: 12px;
+  }
+
+  .math-content strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .math-content em {
+    color: var(--accent);
+    font-style: normal;
+    font-weight: 600;
+  }
+
+  .math-content code {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 0.82rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--text);
+  }
+
+  .math-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.85rem;
+  }
+
+  .math-table th {
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border-strong);
+  }
+
+  .math-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-soft);
+  }
+
+  .math-table td:first-child {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .math-table .verified {
+    color: var(--success);
+  }
+
+  .math-table .conjecture {
+    color: var(--accent);
+  }
+
+  .formula-box {
+    text-align: center;
+    padding: 24px;
+    margin: 20px 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+
+  .formula-box .formula {
+    font-family: 'Fraunces', serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .formula-box .formula-sub {
+    font-size: 0.75rem;
+    color: var(--accent);
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .challenge-box {
+    padding: 20px;
+    margin: 20px 0;
+    background: var(--accent-soft);
+    border: 1px solid rgba(224, 122, 95, 0.2);
+    border-radius: var(--radius-md);
+  }
+
+  .challenge-box p {
+    color: var(--text);
+    margin-bottom: 0;
+  }
+
+  @media (max-width: 380px) {
+    .tubes-container[data-n="6"] { --ball-size: 32px; --tube-w: 48px; gap: 6px; }
+    .tubes-container[data-n="7"] { --ball-size: 27px; --tube-w: 42px; gap: 5px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="logo">pile<span>s</span></div>
+  </header>
+
+  <div class="stats">
+    <div class="stat-pill accent">
+      <span class="stat-label">Moves</span>
+      <span class="stat-value" id="move-count">0</span>
+    </div>
+    <div class="stat-pill">
+      <span class="stat-label">Par</span>
+      <span class="stat-value" id="par-count">&middot;</span>
+    </div>
+  </div>
+
+  <div class="level-bar" id="level-bar">
+    <button class="level-btn active" data-n="2">2</button>
+    <button class="level-btn" data-n="3">3</button>
+    <button class="level-btn" data-n="4">4</button>
+    <button class="level-btn" data-n="5">5</button>
+    <button class="level-btn" data-n="6">6</button>
+    <button class="level-btn" data-n="7">7</button>
+  </div>
+
+  <div class="actions">
+    <button class="action-btn" id="undo-btn" disabled>
+      <span class="action-icon">↩</span> Undo
+    </button>
+    <button class="action-btn primary" id="new-btn">
+      New game
+    </button>
+  </div>
+
+  <div class="lock-msg hidden" id="lock-msg">Complete level <span id="lock-prev">2</span> first to unlock</div>
+  <div class="game-area" id="game-area">
+    <div class="tubes-container" id="game" data-n="2"></div>
+  </div>
+</div>
+
+<div class="victory-overlay" id="victory">
+  <div class="victory-card">
+    <button class="victory-close" id="victory-close">&times;</button>
+    <div class="victory-emoji">&#10024;</div>
+    <div class="victory-title">Well done!</div>
+    <div class="victory-sub" id="victory-msg">Puzzle solved</div>
+    <div class="victory-stats">
+      <div class="v-stat">
+        <div class="v-stat-value" id="v-moves">0</div>
+        <div class="v-stat-label">Moves</div>
+      </div>
+      <div class="v-stat">
+        <div class="v-stat-value" id="v-par">0</div>
+        <div class="v-stat-label">Par</div>
+      </div>
+    </div>
+    <button class="victory-btn" id="victory-next">Next level</button>
+    <button class="victory-btn replay" id="victory-play">Play again</button>
+  </div>
+</div>
+
+<div class="confetti-container" id="confetti"></div>
+
+<button class="math-toggle" id="math-toggle">?</button>
+
+<div class="math-panel" id="math-panel">
+  <div class="math-header">
+    <div class="math-title">The open problem</div>
+    <button class="math-close" id="math-close">&times;</button>
+  </div>
+  <div class="math-content">
+
+    <h2>The puzzle</h2>
+    <p>
+      Given <strong>N columns</strong> of capacity N, each initially containing one ball of every color
+      <code>[0, 1, 2, ..., N-1]</code>, plus <strong>one empty buffer column</strong> of the same capacity,
+      sort the balls so that each column contains N balls of a single color.
+    </p>
+    <p>
+      Only the <strong>top ball</strong> of each column can be moved. This is essentially a
+      <strong>matrix transposition problem</strong> using stacks with a single buffer.
+    </p>
+
+    <h2>The conjecture</h2>
+    <p>
+      We believe the minimum number of moves (par) for a grid of size N follows:
+    </p>
+
+    <div class="formula-box">
+      <div class="formula">(2N &minus; 1)(N &minus; 1)</div>
+      <div class="formula-sub">Unproven conjecture</div>
+    </div>
+
+    <p>
+      This was derived from computing the exact optimal solution for small values of N
+      using BFS (breadth-first search) and fitting a degree-2 polynomial to the results.
+    </p>
+
+    <table class="math-table">
+      <tr><th>N</th><th>Par</th><th>Status</th></tr>
+      <tr><td>2</td><td>3</td><td class="verified">Verified (BFS)</td></tr>
+      <tr><td>3</td><td>10</td><td class="verified">Verified (BFS)</td></tr>
+      <tr><td>4</td><td>21</td><td class="verified">Verified (BFS)</td></tr>
+      <tr><td>5</td><td>36</td><td class="conjecture">Conjecture</td></tr>
+      <tr><td>6</td><td>55</td><td class="conjecture">Conjecture</td></tr>
+      <tr><td>7</td><td>78</td><td class="conjecture">Conjecture</td></tr>
+    </table>
+
+    <h2>Why is it hard?</h2>
+    <p>
+      The state space grows exponentially with N. For N=4, a BFS solver explores
+      <strong>5.7 million states</strong> and takes 8 seconds. For N=5, it exceeds
+      <strong>200 million states</strong> and runs out of memory (8+ GB) before finding the answer.
+    </p>
+    <p>
+      We tried BFS (C, optimized hashing, symmetry reduction), IDA* with transposition tables,
+      and even hybrid approaches. N=5 remains unverified as of today.
+    </p>
+
+    <h2>What would prove it?</h2>
+    <p>
+      A complete proof requires two things:
+    </p>
+    <p>
+      <strong>1. Upper bound</strong> — An explicit algorithm that solves any N in exactly
+      (2N&minus;1)(N&minus;1) moves.
+    </p>
+    <p>
+      <strong>2. Lower bound</strong> — A proof that no algorithm can do better.
+    </p>
+
+    <div class="challenge-box">
+      <p>
+        <strong>Can you prove or disprove this conjecture?</strong> If you find a proof,
+        a counterexample, or a better algorithm, we want to hear from you.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  const PAR_TABLE = { 2: 3, 3: 10, 4: 21, 5: 36, 6: 55, 7: 78 };
+  const MAX_LEVEL = 7;
+  const MIN_LEVEL = 2;
+
+  // Progression: localStorage tracks highest unlocked level
+  function getUnlocked() {
+    return parseInt(localStorage.getItem('piles_unlocked') || (MIN_LEVEL - 1));
+  }
+
+  function setUnlocked(n) {
+    const current = getUnlocked();
+    if (n > current) localStorage.setItem('piles_unlocked', n);
+  }
+
+  let N = 2;
+  let columns = [];
+  let selectedCol = null;
+  let moves = 0;
+  let solved = false;
+  let lastMove = null;
+
+  const gameEl = document.getElementById('game');
+  const moveCountEl = document.getElementById('move-count');
+  const parCountEl = document.getElementById('par-count');
+  const victoryEl = document.getElementById('victory');
+  const undoBtn = document.getElementById('undo-btn');
+  const confettiEl = document.getElementById('confetti');
+  const nextBtn = document.getElementById('victory-next');
+
+  function generatePuzzle() {
+    columns = [[]];
+    for (let c = 0; c < N; c++) {
+      const col = [];
+      for (let r = 0; r < N; r++) col.push(r);
+      columns.push(col);
+    }
+  }
+
+  function render(droppedCol) {
+    gameEl.innerHTML = '';
+    gameEl.setAttribute('data-n', N);
+
+    const tubeMinH = `calc(var(--ball-size, 46px) * ${N} + ${(N - 1) * 5}px + 16px)`;
+
+    columns.forEach((col, ci) => {
+      const colEl = document.createElement('div');
+      colEl.className = 'tube-col' + (ci === 0 ? ' buffer' : '');
+      if (ci === selectedCol) colEl.classList.add('selected');
+      if (selectedCol !== null && ci !== selectedCol && col.length < N) {
+        colEl.classList.add('valid-target');
+      }
+
+      colEl.addEventListener('click', () => handleClick(ci));
+
+      const label = document.createElement('div');
+      label.className = 'tube-label';
+      label.textContent = ci === 0 ? 'buffer' : '';
+      colEl.appendChild(label);
+
+      const tube = document.createElement('div');
+      tube.className = 'tube';
+      tube.style.minHeight = tubeMinH;
+
+      col.forEach((color, bi) => {
+        const ball = document.createElement('div');
+        ball.className = `ball c-${color}`;
+        if (ci === selectedCol && bi === col.length - 1) {
+          ball.classList.add('selected-ball');
+        }
+        if (ci === droppedCol && bi === col.length - 1) {
+          ball.classList.add('dropping');
+        }
+        tube.appendChild(ball);
+      });
+
+      const empty = N - col.length;
+      for (let e = 0; e < empty; e++) {
+        const slot = document.createElement('div');
+        slot.className = 'ball empty-slot';
+        tube.appendChild(slot);
+      }
+
+      colEl.appendChild(tube);
+      gameEl.appendChild(colEl);
+    });
+  }
+
+  function isLocked() {
+    return N > getUnlocked() + 1;
+  }
+
+  function handleClick(ci) {
+    if (solved || isLocked()) return;
+
+    if (selectedCol === null) {
+      if (columns[ci].length > 0) {
+        selectedCol = ci;
+        render();
+      }
+    } else if (selectedCol === ci) {
+      selectedCol = null;
+      render();
+    } else {
+      if (columns[ci].length < N) {
+        const ball = columns[selectedCol].pop();
+        columns[ci].push(ball);
+        moves++;
+        moveCountEl.textContent = moves;
+        lastMove = { from: selectedCol, to: ci };
+        undoBtn.disabled = false;
+        const dropTarget = ci;
+        selectedCol = null;
+        render(dropTarget);
+        saveState();
+        checkVictory();
+      } else {
+        if (columns[ci].length > 0) {
+          selectedCol = ci;
+        } else {
+          selectedCol = null;
+        }
+        render();
+      }
+    }
+  }
+
+  function undo() {
+    if (!lastMove) return;
+    const ball = columns[lastMove.to].pop();
+    columns[lastMove.from].push(ball);
+    moves--;
+    moveCountEl.textContent = moves;
+    lastMove = null;
+    undoBtn.disabled = true;
+    selectedCol = null;
+    render();
+    saveState();
+  }
+
+  function checkVictory() {
+    for (let i = 0; i < columns.length; i++) {
+      if (columns[i].length === 0) continue;
+      if (columns[i].length !== N) return;
+      const c0 = columns[i][0];
+      for (let j = 1; j < columns[i].length; j++) {
+        if (columns[i][j] !== c0) return;
+      }
+    }
+
+    solved = true;
+    clearState();
+    setUnlocked(N);
+    updateLevelButtons();
+
+    const par = PAR_TABLE[N] || '?';
+    const isMaxLevel = N >= MAX_LEVEL;
+
+    setTimeout(() => {
+      document.getElementById('v-moves').textContent = moves;
+      document.getElementById('v-par').textContent = par;
+
+      let msg = `Solved in ${moves} move${moves > 1 ? 's' : ''}`;
+      if (moves === par) msg += ' — perfect!';
+      document.getElementById('victory-msg').textContent = msg;
+
+      nextBtn.classList.toggle('hidden', isMaxLevel);
+      victoryEl.classList.add('active');
+      spawnConfetti();
+    }, 400);
+  }
+
+  function spawnConfetti() {
+    confettiEl.innerHTML = '';
+    const colors = ['#E88B7A', '#7AAED4', '#8FC1A6', '#E8C96A', '#B088C4', '#E8A468'];
+    for (let i = 0; i < 50; i++) {
+      const c = document.createElement('div');
+      c.className = 'confetti';
+      c.style.left = Math.random() * 100 + '%';
+      c.style.top = -10 + 'px';
+      c.style.background = colors[Math.floor(Math.random() * colors.length)];
+      c.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+      c.style.animationDelay = (Math.random() * 0.8) + 's';
+      c.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+      c.style.width = (5 + Math.random() * 6) + 'px';
+      c.style.height = (5 + Math.random() * 6) + 'px';
+      confettiEl.appendChild(c);
+    }
+    setTimeout(() => confettiEl.innerHTML = '', 4000);
+  }
+
+  function newGame() {
+    solved = false;
+    moves = 0;
+    selectedCol = null;
+    lastMove = null;
+    moveCountEl.textContent = '0';
+    undoBtn.disabled = true;
+    victoryEl.classList.remove('active');
+    confettiEl.innerHTML = '';
+
+    const par = PAR_TABLE[N];
+    parCountEl.textContent = par !== undefined ? par : '?';
+
+    generatePuzzle();
+    updateLevelButtons();
+
+    const locked = isLocked();
+    const gameArea = document.getElementById('game-area');
+    const lockMsg = document.getElementById('lock-msg');
+    gameArea.classList.toggle('locked-view', locked);
+    lockMsg.classList.toggle('hidden', !locked);
+    if (locked) {
+      document.getElementById('lock-prev').textContent = N - 1;
+      undoBtn.disabled = true;
+    }
+
+    render();
+  }
+
+  // --- Level button state ---
+  function updateLevelButtons() {
+    const unlocked = getUnlocked();
+    document.querySelectorAll('.level-btn').forEach(btn => {
+      const n = parseInt(btn.dataset.n);
+      btn.classList.remove('locked', 'active');
+      if (n > unlocked + 1) {
+        btn.classList.add('locked');
+      }
+      if (n === N) {
+        btn.classList.add('active');
+      }
+    });
+  }
+
+  // --- Save / restore game state ---
+  function saveState() {
+    localStorage.setItem('piles_state', JSON.stringify({
+      N, columns, moves, selectedCol: null, lastMove
+    }));
+  }
+
+  function loadState() {
+    try {
+      const data = JSON.parse(localStorage.getItem('piles_state'));
+      if (data && data.N && data.columns) {
+        N = data.N;
+        columns = data.columns;
+        moves = data.moves || 0;
+        lastMove = data.lastMove || null;
+        selectedCol = null;
+        solved = false;
+        moveCountEl.textContent = moves;
+        undoBtn.disabled = !lastMove;
+        const par = PAR_TABLE[N];
+        parCountEl.textContent = par !== undefined ? par : '?';
+        updateLevelButtons();
+        render();
+        return true;
+      }
+    } catch (e) {}
+    return false;
+  }
+
+  function clearState() {
+    localStorage.removeItem('piles_state');
+  }
+
+  // --- Next level ---
+  function nextLevel() {
+    if (N < MAX_LEVEL) {
+      N++;
+      victoryEl.classList.remove('active');
+      confettiEl.innerHTML = '';
+      newGame();
+    }
+  }
+
+  // --- Events ---
+  undoBtn.addEventListener('click', undo);
+  document.getElementById('new-btn').addEventListener('click', () => { clearState(); newGame(); });
+  document.getElementById('victory-play').addEventListener('click', () => { clearState(); newGame(); });
+  nextBtn.addEventListener('click', nextLevel);
+  document.getElementById('victory-close').addEventListener('click', () => {
+    victoryEl.classList.remove('active');
+  });
+  victoryEl.addEventListener('click', (e) => {
+    if (e.target === victoryEl) victoryEl.classList.remove('active');
+  });
+
+  document.querySelectorAll('.level-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const n = parseInt(btn.dataset.n);
+      N = n;
+      clearState();
+      newGame();
+    });
+  });
+
+  // --- Math panel ---
+  document.getElementById('math-toggle').addEventListener('click', () => {
+    document.getElementById('math-panel').classList.add('active');
+  });
+  document.getElementById('math-close').addEventListener('click', () => {
+    document.getElementById('math-panel').classList.remove('active');
+  });
+
+  // --- Start ---
+  if (!loadState()) {
+    newGame();
+  }
+})();
+</script>
+</body>
+</html>

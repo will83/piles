@@ -1,0 +1,9 @@
+*.c
+*.js
+solve
+solve_hybrid
+solve_ida
+solve_path
+index_old.html
+app.html
+.vercelignore
