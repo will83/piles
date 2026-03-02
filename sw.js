@@ -1,4 +1,4 @@
-const CACHE_NAME = 'piles-v1';
+const CACHE_NAME = 'piles-v2';
 const ASSETS = [
   '/',
   '/index.html',
