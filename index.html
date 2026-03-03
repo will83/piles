@@ -1003,7 +1003,7 @@
 
     <div class="formula-box">
       <div class="formula">(2N &minus; 1)(N &minus; 1)</div>
-      <div class="formula-sub">Unproven conjecture</div>
+      <div class="formula-sub">Verified for N &le; 5, unproven in general</div>
     </div>
 
     <p>
@@ -1016,7 +1016,7 @@
       <tr><td>2</td><td>3</td><td class="verified">Verified (BFS)</td></tr>
       <tr><td>3</td><td>10</td><td class="verified">Verified (BFS)</td></tr>
       <tr><td>4</td><td>21</td><td class="verified">Verified (BFS)</td></tr>
-      <tr><td>5</td><td>36</td><td class="conjecture">Conjecture</td></tr>
+      <tr><td>5</td><td>36</td><td class="verified">Verified (IDA*+TT)</td></tr>
       <tr><td>6</td><td>55</td><td class="conjecture">Conjecture</td></tr>
       <tr><td>7</td><td>78</td><td class="conjecture">Conjecture</td></tr>
     </table>
@@ -1024,12 +1024,14 @@
     <h2>Why is it hard?</h2>
     <p>
       The state space grows exponentially with N. For N=4, a BFS solver explores
-      <strong>5.7 million states</strong> and takes 8 seconds. For N=5, it exceeds
-      <strong>200 million states</strong> and runs out of memory (8+ GB) before finding the answer.
+      <strong>11 million states</strong> in 8 seconds. For N=5, BFS exceeds
+      <strong>9 GB of RAM</strong> and crashes before finding the answer.
     </p>
     <p>
-      We tried BFS (C, optimized hashing, symmetry reduction), IDA* with transposition tables,
-      and even hybrid approaches. N=5 remains unverified as of today.
+      N=5 was finally cracked using IDA* with an improved admissible heuristic
+      (optimal color-to-column assignment + blocking penalty) and an 8 GB transposition table.
+      It confirmed <strong>par = 36</strong> in 38 seconds and 4 million nodes.
+      N=6 (conjecture: 55) remains out of reach — limit 50 alone takes 16+ hours.
     </p>
 
     <h2>What would prove it?</h2>
